@@ -112,7 +112,7 @@ export default function HomeTab() {
           .eq('user_id', userId)
           .order('date', { ascending: false })
           .limit(7),
-        supabase.from('custom_habits').select('*').eq('user_id', userId).order('sort_order'),
+        supabase.from('custom_habits').select('*').eq('user_id', userId).eq('is_active', true).order('created_at', { ascending: true }),
       ]);
 
       // Restore checked state from existing logs

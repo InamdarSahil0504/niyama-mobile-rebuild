@@ -97,6 +97,7 @@ export default function SettingsTab() {
       .from('custom_habits')
       .select('*')
       .eq('user_id', session.user.id)
+      .eq('is_active', true)
       .order('created_at', { ascending: true });
     if (!error) setCustomHabits(data ?? []);
   }
@@ -123,6 +124,7 @@ export default function SettingsTab() {
         user_id: session.user.id,
         name: newHabitName.trim(),
         emoji: newHabitEmoji,
+        is_active: true,
       });
       if (error) throw error;
       await loadCustomHabits();
