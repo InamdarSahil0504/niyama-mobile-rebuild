@@ -78,9 +78,16 @@ export default function HomeTab() {
   const [showToast, setShowToast] = useState(false);
   const toastAnim = useRef(new Animated.Value(0)).current;
 
+  // Full load on mount: restores checked-habit state from today's logs
+  useEffect(() => {
+    if (userId) loadTodayData();
+  }, [userId]);
+
+  // Lightweight refresh when returning to this tab (e.g. from Settings)
+  // Only reloads custom habits — does not reset checked state or show a spinner
   useFocusEffect(
     useCallback(() => {
-      if (userId) loadTodayData();
+      if (userId) loadCustomHabits();
     }, [userId])
   );
 
@@ -99,6 +106,19 @@ export default function HomeTab() {
       setTimeout(() => setShowConfetti(false), 2500);
     }
   }, [totalChecked, submitted]);
+
+  // Fetch only custom habits — called by useFocusEffect on every tab focus.
+  // Does not touch checkedCustom so in-session check-marks are preserved.
+  async function loadCustomHabits() {
+    if (!userId) return;
+    const { data, error } = await supabase
+      .from('custom_habits')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: true });
+    if (!error) setCustomHabits(data ?? []);
+  }
 
   async function loadTodayData() {
     setLoading(true);

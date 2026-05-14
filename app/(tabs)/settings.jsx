@@ -140,7 +140,10 @@ export default function SettingsTab() {
 
   async function deleteCustomHabit(id) {
     try {
-      const { error } = await supabase.from('custom_habits').delete().eq('id', id);
+      const { error } = await supabase
+        .from('custom_habits')
+        .update({ is_active: false })
+        .eq('id', id);
       if (error) throw error;
       setCustomHabits(prev => prev.filter(h => h.id !== id));
     } catch (err) {
