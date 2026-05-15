@@ -111,12 +111,15 @@ export default function HomeTab() {
   // Does not touch checkedCustom so in-session check-marks are preserved.
   async function loadCustomHabits() {
     if (!userId) return;
+    console.log('[loadCustomHabits] userId:', userId);
     const { data, error } = await supabase
       .from('custom_habits')
       .select('*')
       .eq('user_id', userId)
       .eq('is_active', true)
       .order('created_at', { ascending: true });
+    console.log('[loadCustomHabits] data:', JSON.stringify(data));
+    console.log('[loadCustomHabits] error:', JSON.stringify(error));
     if (!error) setCustomHabits(data ?? []);
   }
 
@@ -328,7 +331,6 @@ export default function HomeTab() {
         ...LIBRARY_HABITS.map(h => ({
           user_id: userId, habit_key: h.key, date: today,
           completed: checkedLibrary.has(h.key), verified: verifiedHabits.has(h.key),
-          photo_url: photoUrls[h.key] ?? null,
         })),
         ...customHabits.map(h => ({
           user_id: userId, habit_key: h.id, date: today,

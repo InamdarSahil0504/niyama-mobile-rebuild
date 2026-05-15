@@ -8,14 +8,37 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  function isRefreshTokenError(error) {
+    const msg = error?.message ?? '';
+    return msg.includes('Refresh Token Not Found') || msg.includes('Invalid Refresh Token');
+  }
+
+  function silentSignOut() {
+    supabase.auth.signOut().catch(() => {});
+  }
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        if (isRefreshTokenError(error)) {
+          silentSignOut();
+        }
+        setLoading(false);
+        return;
+      }
       setSession(session);
       if (session) fetchProfile(session.user.id);
       else setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'TOKEN_REFRESH_FAILED') {
+        silentSignOut();
+        setSession(null);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
       setSession(session);
       if (session) fetchProfile(session.user.id);
       else {
