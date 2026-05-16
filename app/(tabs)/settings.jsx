@@ -154,7 +154,18 @@ export default function SettingsTab() {
       checkUnreadSupport();
       if (profile) {
         setEditName(profile.full_name ?? '');
-        setResearchConsent(profile.research_consent ?? true);
+      }
+      // Always fetch research_consent fresh from DB on focus so the toggle
+      // reflects the persisted value even if the AuthContext cache is stale.
+      if (session?.user?.id) {
+        supabase
+          .from('profiles')
+          .select('research_consent')
+          .eq('id', session.user.id)
+          .single()
+          .then(({ data }) => {
+            if (data != null) setResearchConsent(data.research_consent ?? true);
+          });
       }
     }, [profile?.id])
   );

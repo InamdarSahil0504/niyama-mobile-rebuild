@@ -150,7 +150,7 @@ export const LIBRARY_HABITS = [
     points: 50,
     verificationMethod: 'verified',
     healthKitType: 'HKAppleStandHour',
-    description: 'Stand for at least 1 minute in 12 different hours.',
+    description: 'Stand at least 1 min every hour.',
   },
   {
     key: 'sunlight',
@@ -172,7 +172,7 @@ export const LIBRARY_HABITS = [
   },
   {
     key: 'recovery',
-    label: 'Recovery Practice',
+    label: 'Recovery Practice — Yoga/Stretching',
     icon: '🧘',
     points: 50,
     verificationMethod: 'confirmable',

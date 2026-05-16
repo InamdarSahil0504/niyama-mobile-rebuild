@@ -39,6 +39,15 @@ export default function HomeTab() {
   const tier = profile?.tier ?? 'free';
   const isMinor = profile?.is_minor ?? false;
 
+  // Derive "Wake before HH:MM AM/PM" from profile.wake_time (stored as "HH:MM" or "HH:MM:SS")
+  const wakeLabel = (() => {
+    const t = profile?.wake_time;
+    if (!t) return 'Wake Consistency';
+    const [h, m] = t.split(':').map(Number);
+    const ampm = h < 12 ? 'AM' : 'PM';
+    return `Wake before ${h % 12 || 12}:${String(m).padStart(2, '0')} ${ampm}`;
+  })();
+
   // Habit state
   const [checkedCore, setCheckedCore] = useState(new Set());
   const [checkedLibrary, setCheckedLibrary] = useState(new Set());
@@ -474,11 +483,13 @@ export default function HomeTab() {
         <View style={styles.habitList}>
           {CORE_HABITS.map(habit => {
             const isSteps = habit.key === 'steps';
+            const isWake  = habit.key === 'wake';
             const pts = isSteps ? getStepsPoints(steps) : habit.points;
+            const displayHabit = isWake ? { ...habit, label: wakeLabel } : habit;
             return (
               <HabitRow
                 key={habit.key}
-                habit={habit}
+                habit={displayHabit}
                 checked={checkedCore.has(habit.key)}
                 onToggle={() => toggleHabit(habit.key, 'core')}
                 disabled={submitted}
@@ -573,7 +584,6 @@ export default function HomeTab() {
       <MoodCheckIn
         visible={showMoodModal}
         onSelect={handleMoodSelect}
-        onSkip={() => { setShowMoodModal(false); animateSubmitToRed(); }}
         selectedMood={selectedMood}
       />
 

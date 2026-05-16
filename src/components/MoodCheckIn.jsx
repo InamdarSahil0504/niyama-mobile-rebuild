@@ -8,15 +8,14 @@ import { colors, fonts, fontSizes, spacing, radius } from '../theme';
 /**
  * Mood check-in bottom sheet. Fires automatically after day submission.
  * Selected emoji springs to 1.3x scale; others fade to 0.3 opacity.
- * Auto-dismisses 600ms after selection.
+ * Auto-dismisses 600ms after selection. No skip — user must select a mood.
  *
  * Props:
  *   visible      — boolean
  *   onSelect     — (moodValue: 1–5) => void
- *   onSkip       — () => void
  *   selectedMood — number | null
  */
-export default function MoodCheckIn({ visible, onSelect, onSkip, selectedMood }) {
+export default function MoodCheckIn({ visible, onSelect, selectedMood }) {
   const slideAnim = useRef(new Animated.Value(300)).current;
   // Keep Modal mounted until slide-out animation completes so it isn't cut.
   const [modalVisible, setModalVisible] = useState(false);
@@ -45,14 +44,11 @@ export default function MoodCheckIn({ visible, onSelect, onSkip, selectedMood })
       visible={modalVisible}
       animationType="none"
       statusBarTranslucent
-      onRequestClose={onSkip}
     >
-      {/* Tapping the dark backdrop dismisses like Skip */}
-      <Pressable style={styles.backdrop} onPress={onSkip}>
-        {/* Stop propagation so taps inside the sheet don't close it */}
+      {/* Non-interactive backdrop — no dismiss on tap, no skip */}
+      <View style={styles.backdrop}>
         <Animated.View
           style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}
-          onStartShouldSetResponder={() => true}
         >
           <View style={styles.handle} />
 
@@ -70,12 +66,8 @@ export default function MoodCheckIn({ visible, onSelect, onSkip, selectedMood })
               />
             ))}
           </View>
-
-          <Pressable style={styles.skipBtn} onPress={onSkip}>
-            <Text style={styles.skipText}>Skip for today</Text>
-          </Pressable>
         </Animated.View>
-      </Pressable>
+      </View>
     </Modal>
   );
 }
@@ -173,14 +165,5 @@ const styles = StyleSheet.create({
   moodLabelSelected: {
     color: colors.primary,
     fontFamily: fonts.semiBold,
-  },
-  skipBtn: {
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-  },
-  skipText: {
-    fontFamily: fonts.medium,
-    fontSize: fontSizes.base,
-    color: colors.textMuted,
   },
 });
