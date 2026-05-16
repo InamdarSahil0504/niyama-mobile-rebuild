@@ -296,17 +296,27 @@ export function getTodayString() {
   })
 }
 
-// ─── SHARED: EVENT TRACKING (mobile: Supabase only) ──────────────────────────
+// ─── SHARED: EVENT TRACKING (Supabase + PostHog + Mixpanel) ─────────────────
+
+import { posthog, mixpanel } from './analytics'
 
 export async function trackEvent(supabase, userId, eventType, eventData = {}) {
   const payload = { ...eventData, timestamp: new Date().toISOString(), hour: new Date().getHours() }
+
+  // 1. Supabase event log (fails silently if userId is null)
   try {
     await supabase.from('app_events').insert({
-      user_id: userId,
+      user_id:    userId,
       event_type: eventType,
       event_data: payload,
     })
-  } catch (e) {}
+  } catch (_) {}
+
+  // 2. PostHog
+  try { posthog?.capture(eventType, { ...payload, user_id: userId }) } catch (_) {}
+
+  // 3. Mixpanel
+  try { mixpanel?.track(eventType, { ...payload, user_id: userId }) } catch (_) {}
 }
 
 // =============================================================================

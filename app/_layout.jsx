@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useFonts, DMSans_400Regular, DMSans_500Medium, DMSans_600SemiBold, DMSans_700Bold } from '@expo-google-fonts/dm-sans';
 import * as SplashScreen from 'expo-splash-screen';
@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { setupNotificationHandler, scheduleAllRecurring, cancelAllNotifications } from '../src/notifications';
+import { posthog, mixpanel, identifyUser, resetAnalytics } from '../src/analytics';
 
 setupNotificationHandler();
 
@@ -16,6 +17,24 @@ function RootNavigator() {
   const { session, profile, loading } = useAuth();
   const router = useRouter();
   const segments = useSegments();
+  const hasTrackedOpen = useRef(false);
+
+  // Fire app_opened once per cold launch (not on every re-render)
+  useEffect(() => {
+    if (hasTrackedOpen.current) return;
+    hasTrackedOpen.current = true;
+    try { posthog?.capture('app_opened'); } catch (_) {}
+    try { mixpanel?.track('app_opened'); } catch (_) {}
+  }, []);
+
+  // Identify user in analytics when session is established; reset on sign-out
+  useEffect(() => {
+    if (session?.user?.id) {
+      identifyUser(session.user.id);
+    } else if (!session && !loading) {
+      resetAnalytics();
+    }
+  }, [session?.user?.id, loading]);
 
   // Schedule recurring notifications when user is logged in with a profile
   useEffect(() => {

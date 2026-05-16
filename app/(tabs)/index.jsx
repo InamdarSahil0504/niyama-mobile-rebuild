@@ -12,7 +12,7 @@ import {
   CORE_HABITS, LIBRARY_HABITS,
   calculateDayPoints, isSuccessfulDay, isPerfectDay,
   getStepsPoints, getStepsLabel,
-  getGreeting, TIERS,
+  getGreeting, TIERS, trackEvent,
 } from '../../src/config';
 import NiyamaIcon from '../../src/components/NiyamaIcon';
 import { cancelStreakProtectionForToday, scheduleStreakProtection } from '../../src/notifications';
@@ -244,6 +244,8 @@ export default function HomeTab() {
       }
       return next;
     });
+    // Fire-and-forget — no await needed in a synchronous toggle handler
+    trackEvent(supabase, userId, 'habit_checked', { habit_key: key, habit_type: type });
   }
 
   async function handlePickPhoto(source) {
@@ -282,6 +284,11 @@ export default function HomeTab() {
       setPhotoUrls(prev => ({ ...prev, [pendingPhotoHabit.key]: publicUrl }));
       const setFn = pendingPhotoHabit.type === 'library' ? setCheckedLibrary : setCheckedCore;
       setFn(prev => new Set([...prev, pendingPhotoHabit.key]));
+      trackEvent(supabase, userId, 'habit_checked', {
+        habit_key:  pendingPhotoHabit.key,
+        habit_type: pendingPhotoHabit.type,
+        with_photo: true,
+      });
       setShowPhotoModal(false);
       setPendingPhotoHabit(null);
     } catch (err) {
@@ -374,6 +381,16 @@ export default function HomeTab() {
       setStreak(s => s + 1);
       cancelStreakProtectionForToday(); // user submitted — no need for tonight's reminder
       scheduleStreakProtection();       // reschedule for tomorrow onward
+
+      trackEvent(supabase, userId, 'day_submitted', {
+        total_points:    pointsBreakdown.total,
+        day_successful:  successful,
+        perfect_day:     perfect,
+        core_completed:  checkedCore.size,
+        lib_completed:   checkedLibrary.size,
+        custom_completed: checkedCustom.size,
+        tier,
+      });
 
       // Success animation
       Animated.sequence([
