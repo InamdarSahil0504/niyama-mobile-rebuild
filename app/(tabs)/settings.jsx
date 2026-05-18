@@ -11,7 +11,7 @@ import { useFocusEffect, router } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { supabase } from '../../src/supabase';
 import { colors, fonts, fontSizes, spacing, radius } from '../../src/theme';
-import { TIERS, DB, isMinorUser, CUSTOM_HABIT_POINTS } from '../../src/config';
+import { TIERS, DB, isMinorUser, CUSTOM_HABIT_POINTS, trackEvent } from '../../src/config';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -256,6 +256,11 @@ export default function SettingsTab() {
     setSavingConsent(true);
     try {
       await supabase.from(DB.tables.profiles).update({ research_consent: val }).eq(DB.profiles.id, session.user.id);
+      // Audit trail — fire-and-forget, does not block the UI update
+      trackEvent(supabase, session.user.id, 'research_consent_changed', {
+        consent: val,
+        source: 'settings',
+      });
       await refreshProfile();
     } catch (_) {
       setResearchConsent(!val);

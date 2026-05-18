@@ -115,6 +115,6 @@ const styles = StyleSheet.create({
   btnPrimaryText: { fontFamily: fonts.bold, fontSize: fontSizes.md, color: '#FFFFFF' },
   btnPressed: { opacity: 0.75 },
   btnDisabled: { opacity: 0.6 },
-  skipBtn: { alignItems: 'center', paddingVertical: spacing.sm },
-  skipText: { fontFamily: fonts.medium, fontSize: fontSizes.base, color: colors.textMuted },
+  skipBtn: { alignItems: 'center', paddingVertical: spacing.xs },
+  skipText: { fontFamily: fonts.regular, fontSize: fontSizes.sm, color: colors.textMuted },
 });

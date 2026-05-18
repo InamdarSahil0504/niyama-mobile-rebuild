@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, ScrollView, Alert, ActivityIndicator
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../src/supabase';
-import { HEALTHKIT_READ_TYPES } from '../../src/config';
+import { HEALTHKIT_READ_TYPES, trackEvent } from '../../src/config';
 import { colors, fonts, fontSizes, spacing, radius } from '../../src/theme';
 
 // HealthKit is iOS-only and requires EAS Build (not available in Expo Go)
@@ -71,7 +71,12 @@ export default function HealthKitScreen() {
       if (!user) throw new Error('Not authenticated');
       await supabase.from('profiles').upsert({
         id: user.id,
-        research_consent: researchConsent,
+        research_consent: researchConsent, // mirrors toggle state; defaults true
+      });
+      // Audit trail — fires regardless of which button the user tapped
+      trackEvent(supabase, user.id, 'research_consent_changed', {
+        consent: researchConsent,
+        source: 'onboarding',
       });
       router.push('/(onboarding)/5-tier');
     } catch (err) {
