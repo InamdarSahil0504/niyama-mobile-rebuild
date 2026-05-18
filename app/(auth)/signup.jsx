@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../src/supabase';
 import { colors, fonts, fontSizes, spacing, radius } from '../../src/theme';
+import NiyamaIcon from '../../src/components/NiyamaIcon';
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -64,6 +65,10 @@ export default function SignUpScreen() {
           <Pressable style={styles.backBtn} onPress={() => router.back()}>
             <Text style={styles.backText}>← Back</Text>
           </Pressable>
+
+          <View style={styles.iconRow}>
+            <NiyamaIcon size={80} />
+          </View>
 
           <Text style={styles.title}>Create your account</Text>
           <Text style={styles.subtitle}>Join Niyama Life and start building daily discipline.</Text>
@@ -180,7 +185,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.xxl,
   },
-  backBtn: { marginBottom: spacing.xl },
+  backBtn: { marginBottom: spacing.lg },
+  iconRow: { alignItems: 'center', marginBottom: spacing.xl },
   backText: {
     fontFamily: fonts.medium,
     fontSize: fontSizes.base,

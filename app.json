@@ -7,13 +7,14 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "scheme": "niyamalife",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/niyama-icon.png",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/niyama-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#F5F7F4"
     },
     "ios": {
+      "icon": "./assets/niyama-icon.png",
       "supportsTablet": false,
       "bundleIdentifier": "com.niyamalife.mobile",
       "infoPlist": {
@@ -29,7 +30,7 @@
     "android": {
       "package": "com.niyamalife.mobile",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/niyama-icon.png",
         "backgroundColor": "#4A7A68"
       },
       "edgeToEdgeEnabled": true

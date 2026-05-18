@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../src/supabase';
 import { colors, fonts, fontSizes, spacing, radius } from '../../src/theme';
+import NiyamaIcon from '../../src/components/NiyamaIcon';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -66,6 +67,10 @@ export default function LoginScreen() {
           <Pressable style={styles.backBtn} onPress={() => router.back()}>
             <Text style={styles.backText}>← Back</Text>
           </Pressable>
+
+          <View style={styles.iconRow}>
+            <NiyamaIcon size={80} />
+          </View>
 
           <Text style={styles.title}>Welcome back</Text>
           <Text style={styles.subtitle}>Log in to continue your streak.</Text>
@@ -156,7 +161,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.xxl,
   },
-  backBtn: { marginBottom: spacing.xl },
+  backBtn: { marginBottom: spacing.lg },
+  iconRow: { alignItems: 'center', marginBottom: spacing.xl },
   backText: {
     fontFamily: fonts.medium,
     fontSize: fontSizes.base,
