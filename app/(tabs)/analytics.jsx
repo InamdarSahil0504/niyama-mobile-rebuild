@@ -99,7 +99,7 @@ function CalendarHeatmap({ summaryByDate }) {
     if (!s?.submitted) return 'missed';
     if (s.perfect_day) return colors.accent;
     if (s.day_successful) return colors.primary;
-    return colors.error + '88';
+    return colors.error + '88'; // partial — logged but not successful
   }
 
   const blanks = Array(firstDOW).fill(null);
