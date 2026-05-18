@@ -222,6 +222,7 @@ export default function SettingsTab() {
         name: newHabitName.trim(),
         emoji: newHabitEmoji,
         is_active: true,
+        sort_order: customHabits.length,
       });
       if (error) throw error;
       await loadCustomHabits();

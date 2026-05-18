@@ -39,7 +39,7 @@ function RootNavigator() {
   // Schedule recurring notifications when user is logged in with a profile
   useEffect(() => {
     if (session && profile) {
-      scheduleAllRecurring(profile.wake_time ?? null);
+      scheduleAllRecurring(profile.wake_time_minutes ?? null);
     }
     if (!session) {
       cancelAllNotifications();

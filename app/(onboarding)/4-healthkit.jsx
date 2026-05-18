@@ -71,7 +71,6 @@ export default function HealthKitScreen() {
       if (!user) throw new Error('Not authenticated');
       await supabase.from('profiles').upsert({
         id: user.id,
-        healthkit_connected: healthkitConnected,
         research_consent: researchConsent,
       });
       router.push('/(onboarding)/5-tier');

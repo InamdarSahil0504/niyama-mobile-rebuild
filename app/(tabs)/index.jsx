@@ -12,7 +12,7 @@ import {
   CORE_HABITS, LIBRARY_HABITS,
   calculateDayPoints, isSuccessfulDay, isPerfectDay,
   getStepsPoints, getStepsLabel,
-  getGreeting, TIERS, trackEvent,
+  getGreeting, TIERS, trackEvent, CUSTOM_HABIT_POINTS,
 } from '../../src/config';
 import NiyamaIcon from '../../src/components/NiyamaIcon';
 import { cancelStreakProtectionForToday, scheduleStreakProtection } from '../../src/notifications';
@@ -39,11 +39,12 @@ export default function HomeTab() {
   const tier = profile?.tier ?? 'free';
   const isMinor = profile?.is_minor ?? false;
 
-  // Derive "Wake before HH:MM AM/PM" from profile.wake_time (stored as "HH:MM" or "HH:MM:SS")
+  // Derive "Wake before HH:MM AM/PM" from profile.wake_time_minutes (minutes since midnight)
   const wakeLabel = (() => {
-    const t = profile?.wake_time;
-    if (!t) return 'Wake Consistency';
-    const [h, m] = t.split(':').map(Number);
+    const mins = profile?.wake_time_minutes;
+    if (mins == null) return 'Wake Consistency';
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
     const ampm = h < 12 ? 'AM' : 'PM';
     return `Wake before ${h % 12 || 12}:${String(m).padStart(2, '0')} ${ampm}`;
   })();
@@ -340,26 +341,55 @@ export default function HomeTab() {
     try {
       // Build habit_logs rows for all habits
       const allLogs = [
-        ...CORE_HABITS.map(h => ({
-          user_id: userId, habit_key: h.key, date: today,
-          completed: checkedCore.has(h.key), verified: verifiedHabits.has(h.key),
-        })),
+        ...CORE_HABITS.map(h => {
+          const isCompleted = checkedCore.has(h.key);
+          const pts = h.key === 'steps' ? getStepsPoints(steps) : (h.points ?? 0);
+          return {
+            user_id: userId, habit_key: h.key, date: today,
+            habit_type: 'core', habit_label: h.label,
+            completed: isCompleted, verified: verifiedHabits.has(h.key),
+            points_earned: isCompleted ? pts : 0,
+          };
+        }),
         ...LIBRARY_HABITS.map(h => ({
           user_id: userId, habit_key: h.key, date: today,
+          habit_type: 'library', habit_label: h.label,
           completed: checkedLibrary.has(h.key), verified: verifiedHabits.has(h.key),
+          points_earned: checkedLibrary.has(h.key) ? h.points : 0,
         })),
-        ...customHabits.map(h => ({
-          user_id: userId, habit_key: h.id, date: today,
-          completed: checkedCustom.has(h.id), verified: false,
-        })),
+        ...customHabits.map((h, index) => {
+          const isCompleted = checkedCustom.has(h.id);
+          const earnsPoints = index < pointSlots;
+          return {
+            user_id: userId, habit_key: h.id, date: today,
+            habit_type: 'custom', habit_label: h.name,
+            completed: isCompleted, verified: false,
+            points_earned: isCompleted && earnsPoints ? CUSTOM_HABIT_POINTS : 0,
+          };
+        }),
       ];
 
+      const customCompletedCount = checkedCustom.size;
       const summaryRow = {
         user_id: userId, date: today,
-        total_points: pointsBreakdown.total,
-        day_successful: successful,
-        perfect_day: perfect,
-        submitted: true,
+        core_total:        CORE_HABITS.length,
+        core_completed:    coreCheckedArr.length,
+        library_total:     LIBRARY_HABITS.length,
+        library_completed: libCheckedArr.length,
+        custom_total:      customHabits.length,
+        custom_completed:  customCompletedCount,
+        total_habits:      CORE_HABITS.length + LIBRARY_HABITS.length + customHabits.length,
+        total_completed:   coreCheckedArr.length + libCheckedArr.length + customCompletedCount,
+        day_successful:    successful,
+        perfect_day:       perfect,
+        points_from_core:    pointsBreakdown.core,
+        points_from_library: pointsBreakdown.library,
+        points_from_custom:  pointsBreakdown.custom,
+        bonus_successful_day: pointsBreakdown.successBonus,
+        bonus_perfect_day:    pointsBreakdown.perfectBonus,
+        total_points:  pointsBreakdown.total,
+        submitted:     true,
+        submitted_at:  new Date().toISOString(),
         mood: null,
       };
 

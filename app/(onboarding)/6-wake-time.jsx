@@ -27,10 +27,9 @@ export default function WakeTimeScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Store as HH:MM string (24hr) for consistency
-      const hh = String(wakeTime.getHours()).padStart(2, '0');
-      const mm = String(wakeTime.getMinutes()).padStart(2, '0');
-      await supabase.from('profiles').upsert({ id: user.id, wake_time: `${hh}:${mm}` });
+      // Store as minutes since midnight (e.g. 6:30 AM = 390)
+      const wakeMinutes = wakeTime.getHours() * 60 + wakeTime.getMinutes();
+      await supabase.from('profiles').upsert({ id: user.id, wake_time_minutes: wakeMinutes });
 
       router.push('/(onboarding)/7-custom-habits');
     } catch (err) {

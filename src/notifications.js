@@ -97,12 +97,13 @@ async function scheduleDailyRepeating(key, title, body, hour, minute) {
 
 /**
  * Schedule morning wake notification at the user's wake time.
- * wakeTimeStr: "HH:MM" (24h) from profile.wake_time
- * Safe to call every time wake_time changes.
+ * wakeTimeMinutes: integer minutes since midnight from profile.wake_time_minutes
+ *   (e.g. 390 = 6:30 AM). Safe to call every time wake_time_minutes changes.
  */
-export async function scheduleMorningWake(wakeTimeStr) {
-  if (!wakeTimeStr) return;
-  const [hour, minute] = wakeTimeStr.split(':').map(Number);
+export async function scheduleMorningWake(wakeTimeMinutes) {
+  if (wakeTimeMinutes == null) return;
+  const hour   = Math.floor(wakeTimeMinutes / 60);
+  const minute = wakeTimeMinutes % 60;
   if (isNaN(hour) || isNaN(minute)) return;
 
   await scheduleDailyRepeating(
@@ -197,11 +198,12 @@ export async function sendGiftCardNotification() {
 
 /**
  * Schedule all recurring notifications.
- * Call this after login when profile.wake_time is available.
+ * Call this after login when profile.wake_time_minutes is available.
+ * wakeTimeMinutes: integer minutes since midnight (e.g. 390 = 6:30 AM)
  */
-export async function scheduleAllRecurring(wakeTimeStr) {
+export async function scheduleAllRecurring(wakeTimeMinutes) {
   await Promise.all([
-    scheduleMorningWake(wakeTimeStr),
+    scheduleMorningWake(wakeTimeMinutes),
     scheduleMiddayCheckIn(),
     scheduleStreakProtection(),
   ]);
