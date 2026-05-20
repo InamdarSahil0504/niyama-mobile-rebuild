@@ -42,5 +42,4 @@ google-service-account.json
 *.tsbuildinfo
 
 # generated native folders
-/ios
 /android
