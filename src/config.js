@@ -569,15 +569,17 @@ export function isMinorUser(dateOfBirth) {
 }
 
 // ─── MOBILE: HEALTHKIT DATA TYPES ────────────────────────────────────────────
+// Full HK type identifier strings required by @kingstinct/react-native-healthkit.
+// Pass directly to Core.requestAuthorization({ toRead: HEALTHKIT_READ_TYPES }).
 
 export const HEALTHKIT_READ_TYPES = [
-  'SleepAnalysis',
-  'StepCount',
-  'RestingHeartRate',
-  'HeartRateVariabilitySDNN',
-  'AppleStandHour',
-  'OxygenSaturation',
-  'RespiratoryRate',
+  'HKCategoryTypeIdentifierSleepAnalysis',
+  'HKQuantityTypeIdentifierStepCount',
+  'HKQuantityTypeIdentifierRestingHeartRate',
+  'HKQuantityTypeIdentifierHeartRateVariabilitySDNN',
+  'HKCategoryTypeIdentifierAppleStandHour',
+  'HKQuantityTypeIdentifierOxygenSaturation',
+  'HKQuantityTypeIdentifierRespiratoryRate',
 ]
 
 // ─── MOBILE: MOOD CHECK-IN ───────────────────────────────────────────────────

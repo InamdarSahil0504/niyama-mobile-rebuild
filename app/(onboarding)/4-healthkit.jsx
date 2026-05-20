@@ -7,21 +7,14 @@ import { HEALTHKIT_READ_TYPES, trackEvent } from '../../src/config';
 import { colors, fonts, fontSizes, spacing, radius } from '../../src/theme';
 
 // HealthKit is iOS-only and requires EAS Build (not available in Expo Go)
-let AppleHealthKit = null;
+let Core = null;
 if (Platform.OS === 'ios') {
   try {
-    AppleHealthKit = require('react-native-health').default;
+    Core = require('@kingstinct/react-native-healthkit').default;
   } catch {
     // silently unavailable in Expo Go / simulators without native build
   }
 }
-
-const HEALTHKIT_PERMISSIONS = {
-  permissions: {
-    read: HEALTHKIT_READ_TYPES,
-    write: [],
-  },
-};
 
 const PREVIEW_CARDS = [
   {
@@ -48,20 +41,17 @@ export default function HealthKitScreen() {
   const [loading, setLoading] = useState(false);
 
   async function connectHealthKit() {
-    if (!AppleHealthKit) {
+    if (!Core) {
       Alert.alert('Not available', 'Apple Health integration requires a physical device and EAS Build.');
       return false;
     }
-    return new Promise(resolve => {
-      AppleHealthKit.initHealthKit(HEALTHKIT_PERMISSIONS, (err) => {
-        if (err) {
-          console.log('HealthKit init error:', err);
-          resolve(false);
-        } else {
-          resolve(true);
-        }
-      });
-    });
+    try {
+      await Core.requestAuthorization({ toRead: HEALTHKIT_READ_TYPES, toShare: [] });
+      return true;
+    } catch (err) {
+      console.log('HealthKit auth error:', err);
+      return false;
+    }
   }
 
   async function saveAndContinue(healthkitConnected) {

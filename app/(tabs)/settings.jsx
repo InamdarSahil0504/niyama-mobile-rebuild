@@ -15,18 +15,14 @@ import { TIERS, DB, isMinorUser, CUSTOM_HABIT_POINTS, trackEvent, HEALTHKIT_READ
 
 // ─── HealthKit (iOS-only) ────────────────────────────────────────────────────
 
-let AppleHealthKit = null;
+let Core = null;
 if (Platform.OS === 'ios') {
   try {
-    AppleHealthKit = require('react-native-health').default;
+    Core = require('@kingstinct/react-native-healthkit').default;
   } catch {
     // unavailable in Expo Go / non-native builds
   }
 }
-
-const HEALTHKIT_PERMISSIONS = {
-  permissions: { read: HEALTHKIT_READ_TYPES, write: [] },
-};
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -294,7 +290,7 @@ export default function SettingsTab() {
   // ── HealthKit ──
 
   async function connectAppleHealth() {
-    if (!AppleHealthKit) {
+    if (!Core) {
       Alert.alert(
         'Not available',
         'Apple Health integration requires a physical device and EAS Build.'
@@ -304,12 +300,7 @@ export default function SettingsTab() {
     if (hkConnected || connectingHealthKit) return;
     setConnectingHealthKit(true);
     try {
-      await new Promise((resolve, reject) => {
-        AppleHealthKit.initHealthKit(HEALTHKIT_PERMISSIONS, (err) => {
-          if (err) reject(err);
-          else resolve();
-        });
-      });
+      await Core.requestAuthorization({ toRead: HEALTHKIT_READ_TYPES, toShare: [] });
       setHkConnected(true);
     } catch (_) {
       Alert.alert(
