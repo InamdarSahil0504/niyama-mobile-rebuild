@@ -23,8 +23,8 @@ function RootNavigator() {
   useEffect(() => {
     if (hasTrackedOpen.current) return;
     hasTrackedOpen.current = true;
-    try { posthog?.capture('app_opened'); } catch (_) {}
-    try { mixpanel?.track('app_opened'); } catch (_) {}
+    try { posthog?.capture('app_opened'); } catch (_) { }
+    try { mixpanel?.track('app_opened'); } catch (_) { }
   }, []);
 
   // Identify user in analytics when session is established; reset on sign-out
