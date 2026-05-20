@@ -7,8 +7,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
 import { useFocusEffect, router } from 'expo-router';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Clipboard from 'expo-clipboard';
 
 import { useAuth } from '../../src/context/AuthContext';
+import NiyamaIcon from '../../src/components/NiyamaIcon';
+import { scheduleAllRecurring } from '../../src/notifications';
 import { supabase } from '../../src/supabase';
 import { colors, fonts, fontSizes, spacing, radius } from '../../src/theme';
 import { TIERS, DB, isMinorUser, CUSTOM_HABIT_POINTS, trackEvent, HEALTHKIT_READ_TYPES } from '../../src/config';
@@ -49,11 +53,9 @@ const EMOJI_LIST = [
 
 const SUB_TITLES = {
   'my-habits':        'My Habits',
-  'custom-habits':    'Custom Habits',
   'plan-rewards':     'Your Plan & Rewards',
   'billing':          'Billing',
   'how-niyama-works': 'How Niyama Works',
-  'preferences':      'Preferences',
   'referrals':        'Referrals',
   'data-research':    'Data & Research',
   'legal':            'Legal & Trust',
@@ -165,6 +167,28 @@ export default function SettingsTab() {
   // HealthKit
   const [hkConnected, setHkConnected] = useState(false);
   const [connectingHealthKit, setConnectingHealthKit] = useState(false);
+
+  // Wake time picker — initialized to 6:30 AM; synced from profile on screen open
+  const [wakePickerTime, setWakePickerTime] = useState(() => {
+    const d = new Date();
+    d.setHours(6, 30, 0, 0);
+    return d;
+  });
+  const [savingWakeTime, setSavingWakeTime] = useState(false);
+  const [wakeTimeSaved, setWakeTimeSaved] = useState(false);
+
+  // Referral copy feedback
+  const [referralCopied, setReferralCopied] = useState(false);
+
+  // Sync wake picker to profile whenever user opens My Habits screen
+  useEffect(() => {
+    if (screen === 'my-habits' && profile?.wake_time_minutes != null) {
+      const d = new Date();
+      d.setHours(Math.floor(profile.wake_time_minutes / 60), profile.wake_time_minutes % 60, 0, 0);
+      setWakePickerTime(d);
+      setWakeTimeSaved(false);
+    }
+  }, [screen]);
 
   useFocusEffect(
     useCallback(() => {
@@ -325,6 +349,37 @@ export default function SettingsTab() {
     }
   }
 
+  // ── Wake time ──
+
+  async function saveWakeTime() {
+    const newMinutes = wakePickerTime.getHours() * 60 + wakePickerTime.getMinutes();
+    setSavingWakeTime(true);
+    try {
+      const { error } = await supabase
+        .from(DB.tables.profiles)
+        .update({ wake_time_minutes: newMinutes })
+        .eq(DB.profiles.id, session.user.id);
+      if (error) throw error;
+      await refreshProfile();
+      scheduleAllRecurring(newMinutes);
+      setWakeTimeSaved(true);
+      setTimeout(() => setWakeTimeSaved(false), 2500);
+    } catch (err) {
+      Alert.alert('Error', err?.message ?? 'Could not save wake time.');
+    } finally {
+      setSavingWakeTime(false);
+    }
+  }
+
+  // ── Referral copy ──
+
+  async function copyReferralCode() {
+    if (!profile?.referral_code) return;
+    await Clipboard.setStringAsync(profile.referral_code);
+    setReferralCopied(true);
+    setTimeout(() => setReferralCopied(false), 2000);
+  }
+
   // ── Account ──
 
   async function handleSignOut() {
@@ -425,14 +480,8 @@ export default function SettingsTab() {
                 <NavRow
                   icon="⏰"
                   label="My Habits"
-                  subtitle="Wake time · habit structure"
+                  subtitle={`Wake time · your 10 habits · ${customHabits.length} custom`}
                   onPress={() => setScreen('my-habits')}
-                />
-                <NavRow
-                  icon="⭐"
-                  label="Custom Habits"
-                  subtitle={`${customHabits.length} active habit${customHabits.length !== 1 ? 's' : ''}`}
-                  onPress={() => setScreen('custom-habits')}
                   last
                 />
               </Group>
@@ -483,12 +532,6 @@ export default function SettingsTab() {
 
               {/* Group 5 — Account */}
               <Group label="Account">
-                <NavRow
-                  icon="🔔"
-                  label="Preferences"
-                  subtitle="Wake time · HealthKit"
-                  onPress={() => setScreen('preferences')}
-                />
                 {!isMinor && (
                   <NavRow
                     icon="👥"
@@ -557,40 +600,83 @@ export default function SettingsTab() {
           ══════════════════════════════════════════ */}
           {screen === 'my-habits' && (
             <>
-              <InfoCard tinted>
-                <Text style={s.infoCardTitle}>Phase 6 habit structure</Text>
+              {/* ── Section A: Wake Time ────────────────────── */}
+              <Text style={[s.groupLabel, { marginTop: spacing.xl }]}>Wake Time</Text>
+              <View style={[s.groupCard, { padding: spacing.lg }]}>
+                <Text style={{ fontFamily: fonts.regular, fontSize: fontSizes.base, color: colors.textSecondary, lineHeight: 22, marginBottom: spacing.sm }}>
+                  Your target wake time. Niyama verifies you woke within 30 minutes of this.
+                </Text>
+                <DateTimePicker
+                  value={wakePickerTime}
+                  mode="time"
+                  display="spinner"
+                  onChange={(_, date) => { if (date) setWakePickerTime(date); }}
+                  themeVariant="light"
+                  textColor={colors.textPrimary}
+                />
+                <Pressable
+                  style={({ pressed }) => [{
+                    backgroundColor: colors.primary, borderRadius: radius.md,
+                    paddingVertical: 14, alignItems: 'center', marginTop: spacing.sm,
+                    opacity: savingWakeTime || pressed ? 0.7 : 1,
+                  }]}
+                  onPress={saveWakeTime}
+                  disabled={savingWakeTime}
+                >
+                  {savingWakeTime
+                    ? <ActivityIndicator color="#FFFFFF" />
+                    : <Text style={{ fontFamily: fonts.bold, fontSize: fontSizes.base, color: '#FFFFFF' }}>Save wake time</Text>
+                  }
+                </Pressable>
+                {wakeTimeSaved && (
+                  <Text style={{ fontFamily: fonts.medium, fontSize: fontSizes.sm, color: colors.primary, textAlign: 'center', marginTop: spacing.md }}>
+                    ✓ Wake time updated
+                  </Text>
+                )}
+              </View>
+
+              {/* ── Section B: Your 10 Habits (read-only) ────── */}
+              <Text style={[s.groupLabel, { marginTop: spacing.lg }]}>Your 10 Habits</Text>
+              <View style={s.groupCard}>
                 {[
-                  { icon: '🌅', label: '3 Core habits', desc: 'Wake Consistency, Sleep Duration, Steps — auto-verified via Apple Health.' },
-                  { icon: '📚', label: '7 Library habits', desc: 'Screen Time, No Phone, Stand, Sunlight, No Late Food, Recovery, Meditation — fixed for everyone.' },
-                  { icon: '⭐', label: 'Custom habits', desc: 'Add personal habits to track. Manage them under Custom Habits.' },
-                ].map((item, i) => (
-                  <View key={i} style={[s.habitStructureRow, i > 0 && { marginTop: spacing.md }]}>
-                    <Text style={s.habitStructureIcon}>{item.icon}</Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.habitStructureLabel}>{item.label}</Text>
-                      <Text style={s.habitStructureDesc}>{item.desc}</Text>
+                  { icon: '🌅', label: 'Wake Consistency' },
+                  { icon: '😴', label: 'Sleep Duration' },
+                  { icon: '🚶', label: 'Steps / Activity' },
+                  { icon: '📱', label: 'Screen Time' },
+                  { icon: '🌙', label: 'No Phone after 10:30pm' },
+                  { icon: '🧍', label: 'Stand Consistency' },
+                  { icon: '☀️', label: 'Morning Sunlight' },
+                  { icon: '🍽️', label: 'No Food after 8pm' },
+                  { icon: '🧘', label: 'Recovery Practice' },
+                  { icon: '🧠', label: 'Meditation' },
+                ].map((h, i) => (
+                  <View
+                    key={h.label}
+                    style={{
+                      flexDirection: 'row', alignItems: 'center',
+                      paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
+                      borderBottomWidth: i < 9 ? 1 : 0,
+                      borderBottomColor: colors.border,
+                    }}
+                  >
+                    <Text style={{ fontSize: 18, width: 28 }}>{h.icon}</Text>
+                    <Text style={{ fontFamily: fonts.regular, fontSize: fontSizes.base, color: colors.textPrimary, flex: 1 }}>
+                      {h.label}
+                    </Text>
+                    <View style={{
+                      width: 22, height: 22, borderRadius: 11,
+                      backgroundColor: colors.primary + '22',
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Text style={{ color: colors.primary, fontSize: 11, fontFamily: fonts.bold }}>✓</Text>
                     </View>
                   </View>
                 ))}
-              </InfoCard>
+              </View>
 
-              <SectionCard style={{ marginTop: spacing.lg }}>
-                <Row label="Core habits" value="3" />
-                <Row label="Library habits" value="7" />
-                <Row label="Core habit points" value="100 pts each" />
-                <Row label="Library habit points" value="50 pts each" />
-                <Row label="Successful day bonus" value="+50 pts" />
-                <Row label="Perfect day bonus" value="+100 pts" last />
-              </SectionCard>
-            </>
-          )}
-
-          {/* ══════════════════════════════════════════
-              CUSTOM HABITS
-          ══════════════════════════════════════════ */}
-          {screen === 'custom-habits' && (
-            <>
-              <View style={s.habitSlotBanner}>
+              {/* ── Section C: Custom Habits ─────────────────── */}
+              <Text style={[s.groupLabel, { marginTop: spacing.lg }]}>Custom Habits</Text>
+              <View style={[s.habitSlotBanner, { marginTop: spacing.sm }]}>
                 <Text style={s.habitSlotBannerText}>
                   {pointSlots === 0
                     ? 'Upgrade to Plus to earn points on custom habits'
@@ -605,8 +691,7 @@ export default function SettingsTab() {
                   </View>
                 )}
               </View>
-
-              <SectionCard style={{ marginTop: spacing.sm }}>
+              <View style={[s.groupCard, { marginTop: spacing.sm }]}>
                 {customHabits.length === 0 ? (
                   <View style={s.emptyHabits}>
                     <Text style={s.emptyHabitsText}>No custom habits yet. Tap + Add to create one.</Text>
@@ -634,9 +719,10 @@ export default function SettingsTab() {
                 <Pressable style={s.addHabitBtn} onPress={() => setAddHabitVisible(true)}>
                   <Text style={s.addHabitBtnText}>+ Add habit</Text>
                 </Pressable>
-              </SectionCard>
+              </View>
             </>
           )}
+
 
           {/* ══════════════════════════════════════════
               YOUR PLAN & REWARDS
@@ -698,44 +784,93 @@ export default function SettingsTab() {
             </SectionCard>
           )}
 
-          {/* ══════════════════════════════════════════
-              PREFERENCES
-          ══════════════════════════════════════════ */}
-          {screen === 'preferences' && (
-            <SectionCard>
-              <Row label="Wake time" value={(() => {
-                const mins = profile?.wake_time_minutes;
-                if (mins == null) return '—';
-                const h = Math.floor(mins / 60);
-                const m = mins % 60;
-                const ampm = h < 12 ? 'AM' : 'PM';
-                return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${ampm}`;
-              })()} />
-              <Row label="Apple Health" value={hkConnected ? 'Connected' : 'Not connected'} last />
-            </SectionCard>
-          )}
 
           {/* ══════════════════════════════════════════
               REFERRALS
           ══════════════════════════════════════════ */}
           {screen === 'referrals' && (
-            <SectionCard>
+            <>
+              {/* Brand card */}
+              <View style={[s.sectionCard, { alignItems: 'center', paddingVertical: spacing.xxl }]}>
+                <NiyamaIcon size={64} showBackground />
+                <Text style={{ fontFamily: fonts.bold, fontSize: fontSizes.xl, color: colors.textPrimary, marginTop: spacing.md }}>
+                  Niyama Life
+                </Text>
+                <Text style={{ fontFamily: fonts.regular, fontSize: fontSizes.base, color: colors.textSecondary, marginTop: 2 }}>
+                  Rewarding Discipline.
+                </Text>
+              </View>
+
               {profile?.referral_code ? (
                 <>
-                  <Row label="Your code" value={profile.referral_code} valueStyle={s.codeValue} />
-                  <Pressable style={[s.linkRow, s.lastRow]} onPress={shareReferral}>
-                    <Text style={s.linkRowText}>Share referral link</Text>
-                    <Text style={s.chevronRight}>›</Text>
+                  {/* Referral code box */}
+                  <Pressable
+                    style={({ pressed }) => [s.sectionCard, {
+                      alignItems: 'center', paddingVertical: spacing.xl,
+                      opacity: pressed ? 0.75 : 1,
+                    }]}
+                    onPress={copyReferralCode}
+                  >
+                    <Text style={{ fontFamily: fonts.regular, fontSize: fontSizes.xs, color: referralCopied ? colors.primary : colors.textMuted, marginBottom: spacing.sm }}>
+                      {referralCopied ? '✓ Copied!' : 'Tap to copy'}
+                    </Text>
+                    <Text style={{ fontFamily: fonts.bold, fontSize: 34, color: colors.primary, letterSpacing: 5 }}>
+                      {profile.referral_code}
+                    </Text>
                   </Pressable>
+
+                  {/* Share button */}
+                  <Pressable
+                    style={({ pressed }) => [{
+                      backgroundColor: colors.primary, borderRadius: radius.md,
+                      paddingVertical: 16, alignItems: 'center',
+                      opacity: pressed ? 0.75 : 1,
+                    }]}
+                    onPress={() => Share.share({
+                      message: `Join me on Niyama Life and get rewarded for your daily habits! Use my referral code: ${profile.referral_code} — download at https://niyamalife.com`,
+                    })}
+                  >
+                    <Text style={{ fontFamily: fonts.bold, fontSize: fontSizes.md, color: '#FFFFFF' }}>
+                      Share your referral link
+                    </Text>
+                  </Pressable>
+
+                  {/* Benefit card */}
+                  <InfoCard tinted>
+                    <Text style={{ fontFamily: fonts.semiBold, fontSize: fontSizes.base, color: colors.primary, textAlign: 'center', lineHeight: 22 }}>
+                      Give a friend $5, earn $5 when they complete their first 30 days on any paid plan.
+                    </Text>
+                  </InfoCard>
+
+                  {/* Stats row */}
+                  <View style={[s.sectionCard, { flexDirection: 'row', paddingVertical: 0 }]}>
+                    <View style={{ flex: 1, alignItems: 'center', paddingVertical: spacing.lg }}>
+                      <Text style={{ fontFamily: fonts.bold, fontSize: fontSizes.xxl, color: colors.primary }}>
+                        {profile.referral_count ?? 0}
+                      </Text>
+                      <Text style={{ fontFamily: fonts.regular, fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 2 }}>
+                        Friends invited
+                      </Text>
+                    </View>
+                    <View style={{ width: 1, backgroundColor: colors.border }} />
+                    <View style={{ flex: 1, alignItems: 'center', paddingVertical: spacing.lg }}>
+                      <Text style={{ fontFamily: fonts.bold, fontSize: fontSizes.xxl, color: colors.primary }}>
+                        ${(profile.referral_earnings ?? 0).toFixed(2)}
+                      </Text>
+                      <Text style={{ fontFamily: fonts.regular, fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 2 }}>
+                        Earned
+                      </Text>
+                    </View>
+                  </View>
                 </>
               ) : (
                 <InfoCard>
                   <Text style={s.infoText}>
-                    Referrals are coming soon. You'll be able to earn bonus points for every friend you invite.
+                    Your referral code is being generated. Check back soon!
                   </Text>
                 </InfoCard>
               )}
-            </SectionCard>
+            </>
           )}
 
           {/* ══════════════════════════════════════════
@@ -776,7 +911,7 @@ export default function SettingsTab() {
                 </Pressable>
                 <Pressable
                   style={({ pressed }) => [s.linkRow, s.lastRow, pressed && { opacity: 0.65 }]}
-                  onPress={() => Linking.openURL('mailto:support@niyamalife.com?subject=Data%20Export%20Request')}
+                  onPress={() => Linking.openURL('mailto:admin@niyamalife.com?subject=Data%20Export%20Request')}
                 >
                   <Text style={s.linkRowText}>Export my data</Text>
                   <Text style={s.chevronRight}>›</Text>
@@ -791,10 +926,10 @@ export default function SettingsTab() {
           {screen === 'legal' && (
             <SectionCard>
               {[
-                { label: 'Terms of Service',   url: 'https://niyamalife.com/terms'   },
-                { label: 'Privacy Policy',      url: 'https://niyamalife.com/privacy' },
-                { label: 'Cookie Policy',       url: 'https://niyamalife.com/privacy' },
-                { label: 'Age & Minor Policy',  url: 'https://niyamalife.com/terms'   },
+                { label: 'Terms of Service',   url: 'https://www.niyamalife.com/terms'   },
+                { label: 'Privacy Policy',      url: 'https://www.niyamalife.com/privacy' },
+                { label: 'Cookie Policy',       url: 'https://www.niyamalife.com/privacy' },
+                { label: 'Age & Minor Policy',  url: 'https://www.niyamalife.com/terms'   },
               ].map(({ label, url }, i, arr) => (
                 <Pressable
                   key={label}
