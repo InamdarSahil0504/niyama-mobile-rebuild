@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, Pressable, StyleSheet, Switch,
   Modal, TextInput, Alert, ActivityIndicator, Share,
-  KeyboardAvoidingView, Platform,
+  KeyboardAvoidingView, Platform, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
@@ -647,10 +647,13 @@ export default function SettingsTab() {
               <Row label="Base cap" value={`$${(tierConfig?.baseCap ?? 0).toFixed(2)}/mo`} />
               <Row label="Max monthly" value={`$${(tierConfig?.maxMonthly ?? 0).toFixed(2)}`} />
               {tier !== 'premium' && (
-                <View style={[s.linkRow, s.lastRow]}>
-                  <Text style={s.linkRowText}>Upgrade your plan</Text>
-                  <Text style={s.comingSoon}>Coming soon</Text>
-                </View>
+                <Pressable
+                  style={({ pressed }) => [s.linkRow, s.lastRow, pressed && { opacity: 0.65 }]}
+                  onPress={() => Linking.openURL('https://app.niyamalife.com')}
+                >
+                  <Text style={s.linkRowText}>Upgrade your plan →</Text>
+                  <Text style={s.chevronRight}>›</Text>
+                </Pressable>
               )}
             </SectionCard>
           )}
@@ -660,14 +663,20 @@ export default function SettingsTab() {
           ══════════════════════════════════════════ */}
           {screen === 'billing' && (
             <SectionCard>
-              <View style={s.linkRow}>
+              <Pressable
+                style={({ pressed }) => [s.linkRow, pressed && { opacity: 0.65 }]}
+                onPress={() => Linking.openURL('https://app.niyamalife.com')}
+              >
                 <Text style={s.linkRowText}>Manage subscription</Text>
-                <Text style={s.comingSoon}>Coming soon</Text>
-              </View>
-              <View style={[s.linkRow, s.lastRow]}>
+                <Text style={s.chevronRight}>›</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [s.linkRow, s.lastRow, pressed && { opacity: 0.65 }]}
+                onPress={() => Linking.openURL('https://app.niyamalife.com')}
+              >
                 <Text style={s.linkRowText}>Billing history</Text>
-                <Text style={s.comingSoon}>Coming soon</Text>
-              </View>
+                <Text style={s.chevronRight}>›</Text>
+              </Pressable>
             </SectionCard>
           )}
 
@@ -720,7 +729,11 @@ export default function SettingsTab() {
                   </Pressable>
                 </>
               ) : (
-                <Row label="Referral code" value="Coming soon" last />
+                <InfoCard>
+                  <Text style={s.infoText}>
+                    Referrals are coming soon. You'll be able to earn bonus points for every friend you invite.
+                  </Text>
+                </InfoCard>
               )}
             </SectionCard>
           )}
@@ -732,7 +745,7 @@ export default function SettingsTab() {
             <>
               <InfoCard>
                 <Text style={s.infoText}>
-                  Niyama reads the following from Apple Health: step count, sleep duration, stand hours, and resting heart rate. Your raw health data never leaves your device — only anonymised, aggregated insights are used for habit scoring. If you consent below, anonymised data may contribute to independent health research studies.
+                  Niyama Life reads health data from Apple Health including steps, sleep, heart rate, HRV, mindful minutes, and more to automatically verify your daily habits and build your personal health dashboard. Your raw health data never leaves your device — only anonymised, aggregated insights are used for habit scoring. If you consent below, anonymised data may contribute to independent health research studies.
                 </Text>
               </InfoCard>
 
@@ -750,14 +763,24 @@ export default function SettingsTab() {
                     disabled={savingConsent}
                   />
                 </View>
-                <View style={s.linkRow}>
+                <Pressable
+                  style={({ pressed }) => [s.linkRow, pressed && { opacity: 0.65 }]}
+                  onPress={() => Alert.alert(
+                    'Manage Apple Health Permissions',
+                    'To manage Apple Health permissions, go to Settings → Privacy & Security → Health → Niyama Life',
+                    [{ text: 'OK' }],
+                  )}
+                >
                   <Text style={s.linkRowText}>Disconnect Apple Health</Text>
-                  <Text style={s.comingSoon}>Coming soon</Text>
-                </View>
-                <View style={[s.linkRow, s.lastRow]}>
+                  <Text style={s.chevronRight}>›</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [s.linkRow, s.lastRow, pressed && { opacity: 0.65 }]}
+                  onPress={() => Linking.openURL('mailto:support@niyamalife.com?subject=Data%20Export%20Request')}
+                >
                   <Text style={s.linkRowText}>Export my data</Text>
-                  <Text style={s.comingSoon}>Coming soon</Text>
-                </View>
+                  <Text style={s.chevronRight}>›</Text>
+                </Pressable>
               </SectionCard>
             </>
           )}
@@ -767,11 +790,20 @@ export default function SettingsTab() {
           ══════════════════════════════════════════ */}
           {screen === 'legal' && (
             <SectionCard>
-              {['Terms of Service', 'Privacy Policy', 'Cookie Policy', 'Age & Minor Policy'].map((label, i, arr) => (
-                <View key={label} style={[s.linkRow, i === arr.length - 1 && s.lastRow]}>
+              {[
+                { label: 'Terms of Service',   url: 'https://niyamalife.com/terms'   },
+                { label: 'Privacy Policy',      url: 'https://niyamalife.com/privacy' },
+                { label: 'Cookie Policy',       url: 'https://niyamalife.com/privacy' },
+                { label: 'Age & Minor Policy',  url: 'https://niyamalife.com/terms'   },
+              ].map(({ label, url }, i, arr) => (
+                <Pressable
+                  key={label}
+                  style={({ pressed }) => [s.linkRow, i === arr.length - 1 && s.lastRow, pressed && { opacity: 0.65 }]}
+                  onPress={() => Linking.openURL(url)}
+                >
                   <Text style={s.linkRowText}>{label}</Text>
-                  <Text style={s.comingSoon}>Coming soon</Text>
-                </View>
+                  <Text style={s.chevronRight}>›</Text>
+                </Pressable>
               ))}
             </SectionCard>
           )}
