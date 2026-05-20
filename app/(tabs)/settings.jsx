@@ -11,7 +11,22 @@ import { useFocusEffect, router } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
 import { supabase } from '../../src/supabase';
 import { colors, fonts, fontSizes, spacing, radius } from '../../src/theme';
-import { TIERS, DB, isMinorUser, CUSTOM_HABIT_POINTS, trackEvent } from '../../src/config';
+import { TIERS, DB, isMinorUser, CUSTOM_HABIT_POINTS, trackEvent, HEALTHKIT_READ_TYPES } from '../../src/config';
+
+// ─── HealthKit (iOS-only) ────────────────────────────────────────────────────
+
+let AppleHealthKit = null;
+if (Platform.OS === 'ios') {
+  try {
+    AppleHealthKit = require('react-native-health').default;
+  } catch {
+    // unavailable in Expo Go / non-native builds
+  }
+}
+
+const HEALTHKIT_PERMISSIONS = {
+  permissions: { read: HEALTHKIT_READ_TYPES, write: [] },
+};
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -50,7 +65,7 @@ const SUB_TITLES = {
 
 // ─── Shared sub-components ──────────────────────────────────────────────────
 
-function NavRow({ icon, label, subtitle, onPress, chevron = true, danger = false, badge, last }) {
+function NavRow({ icon, label, subtitle, onPress, chevron = true, danger = false, badge, last, rightLabel, rightLabelStyle }) {
   return (
     <Pressable
       onPress={onPress}
@@ -72,7 +87,10 @@ function NavRow({ icon, label, subtitle, onPress, chevron = true, danger = false
         </View>
         {subtitle ? <Text style={s.navRowSub} numberOfLines={1}>{subtitle}</Text> : null}
       </View>
-      {chevron && !danger && <Text style={s.chevron}>›</Text>}
+      {rightLabel != null && (
+        <Text style={[s.navRowRight, rightLabelStyle]}>{rightLabel}</Text>
+      )}
+      {chevron && !danger && rightLabel == null && <Text style={s.chevron}>›</Text>}
     </Pressable>
   );
 }
@@ -147,6 +165,10 @@ export default function SettingsTab() {
   // Research consent
   const [researchConsent, setResearchConsent] = useState(profile?.research_consent ?? true);
   const [savingConsent, setSavingConsent] = useState(false);
+
+  // HealthKit
+  const [hkConnected, setHkConnected] = useState(false);
+  const [connectingHealthKit, setConnectingHealthKit] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -266,6 +288,36 @@ export default function SettingsTab() {
       setResearchConsent(!val);
     } finally {
       setSavingConsent(false);
+    }
+  }
+
+  // ── HealthKit ──
+
+  async function connectAppleHealth() {
+    if (!AppleHealthKit) {
+      Alert.alert(
+        'Not available',
+        'Apple Health integration requires a physical device and EAS Build.'
+      );
+      return;
+    }
+    if (hkConnected || connectingHealthKit) return;
+    setConnectingHealthKit(true);
+    try {
+      await new Promise((resolve, reject) => {
+        AppleHealthKit.initHealthKit(HEALTHKIT_PERMISSIONS, (err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+      setHkConnected(true);
+    } catch (_) {
+      Alert.alert(
+        'Could not connect',
+        'Please check that Apple Health is enabled in device Settings.'
+      );
+    } finally {
+      setConnectingHealthKit(false);
     }
   }
 
@@ -398,7 +450,23 @@ export default function SettingsTab() {
                 />
               </Group>
 
-              {/* Group 3 — Learn */}
+              {/* Group 3 — Integrations */}
+              {Platform.OS === 'ios' && (
+                <Group label="Integrations">
+                  <NavRow
+                    icon="🍎"
+                    label="Apple Health"
+                    subtitle={hkConnected ? 'Auto-verifies sleep, steps & stand' : 'Connect to auto-verify habits'}
+                    onPress={connectAppleHealth}
+                    chevron={false}
+                    rightLabel={connectingHealthKit ? '…' : (hkConnected ? 'Connected' : 'Connect')}
+                    rightLabelStyle={hkConnected ? s.connectedLabel : s.connectLabel}
+                    last
+                  />
+                </Group>
+              )}
+
+              {/* Group 4 — Learn */}
               <Group label="Learn">
                 <NavRow
                   icon="📖"
@@ -409,7 +477,7 @@ export default function SettingsTab() {
                 />
               </Group>
 
-              {/* Group 4 — Account */}
+              {/* Group 5 — Account */}
               <Group label="Account">
                 <NavRow
                   icon="🔔"
@@ -434,7 +502,7 @@ export default function SettingsTab() {
                 />
               </Group>
 
-              {/* Group 5 — Support */}
+              {/* Group 6 — Support */}
               <Group label="Support">
                 <NavRow
                   icon="💬"
@@ -446,7 +514,7 @@ export default function SettingsTab() {
                 />
               </Group>
 
-              {/* Group 6 — Legal */}
+              {/* Group 7 — Legal */}
               <Group label="Legal">
                 <NavRow
                   icon="⚖️"
@@ -457,7 +525,7 @@ export default function SettingsTab() {
                 />
               </Group>
 
-              {/* Group 7 — Danger zone (no label) */}
+              {/* Group 8 — Danger zone (no label) */}
               <Group label={null}>
                 <NavRow
                   label="Sign Out"
@@ -622,8 +690,15 @@ export default function SettingsTab() {
           ══════════════════════════════════════════ */}
           {screen === 'preferences' && (
             <SectionCard>
-              <Row label="Wake time" value={profile?.wake_time ? formatTime(profile.wake_time) : '—'} />
-              <Row label="HealthKit" value={profile?.healthkit_connected ? 'Connected' : 'Not connected'} last />
+              <Row label="Wake time" value={(() => {
+                const mins = profile?.wake_time_minutes;
+                if (mins == null) return '—';
+                const h = Math.floor(mins / 60);
+                const m = mins % 60;
+                const ampm = h < 12 ? 'AM' : 'PM';
+                return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${ampm}`;
+              })()} />
+              <Row label="Apple Health" value={hkConnected ? 'Connected' : 'Not connected'} last />
             </SectionCard>
           )}
 
@@ -1071,6 +1146,23 @@ const s = StyleSheet.create({
     fontFamily: fonts.semiBold,
     fontSize: 10,
     color: '#FFFFFF',
+  },
+  navRowRight: {
+    fontFamily: fonts.semiBold,
+    fontSize: fontSizes.sm,
+    marginLeft: spacing.sm,
+    flexShrink: 0,
+  },
+  connectedLabel: {
+    color: colors.primary,
+  },
+  connectLabel: {
+    color: '#FFFFFF',
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    borderRadius: radius.full,
+    overflow: 'hidden',
   },
 
   // ── Footer ──
