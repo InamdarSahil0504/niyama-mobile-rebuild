@@ -16,6 +16,7 @@ import {
 } from '../../src/config';
 import NiyamaIcon from '../../src/components/NiyamaIcon';
 import { cancelStreakProtectionForToday, scheduleStreakProtection } from '../../src/notifications';
+import { readHealthMetricsForDate } from '../../src/healthkit';
 import HabitRow from '../../src/components/HabitRow';
 import StreakBanner from '../../src/components/StreakBanner';
 import MoodCheckIn from '../../src/components/MoodCheckIn';
@@ -411,6 +412,24 @@ export default function HomeTab() {
       setStreak(s => s + 1);
       cancelStreakProtectionForToday(); // user submitted — no need for tonight's reminder
       scheduleStreakProtection();       // reschedule for tomorrow onward
+
+      // Background HealthKit sync — fire-and-forget.
+      // Reads all health metrics for today and persists them via RPC.
+      // Never blocks the UI or shows errors to the user on failure.
+      ;(async () => {
+        try {
+          const metrics = await readHealthMetricsForDate(today);
+          if (metrics) {
+            await supabase.rpc('upsert_health_metrics', {
+              p_user_id: userId,
+              p_date:    today,
+              p_data:    metrics,
+            });
+          }
+        } catch (_) {
+          // silent — HealthKit sync failures never surface to the user
+        }
+      })();
 
       trackEvent(supabase, userId, 'day_submitted', {
         total_points:    pointsBreakdown.total,

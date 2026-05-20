@@ -573,14 +573,63 @@ export function isMinorUser(dateOfBirth) {
 // Pass directly to Core.requestAuthorization({ toRead: HEALTHKIT_READ_TYPES }).
 
 export const HEALTHKIT_READ_TYPES = [
+  // Sleep
   'HKCategoryTypeIdentifierSleepAnalysis',
+  'HKCategoryTypeIdentifierAppleStandHour',
+  'HKCategoryTypeIdentifierSleepingBreathingDisturbances',
+  // Activity
   'HKQuantityTypeIdentifierStepCount',
+  'HKQuantityTypeIdentifierDistanceWalkingRunning',
+  'HKQuantityTypeIdentifierActiveEnergyBurned',
+  'HKQuantityTypeIdentifierBasalEnergyBurned',
+  'HKQuantityTypeIdentifierAppleExerciseTime',
+  'HKQuantityTypeIdentifierAppleStandTime',
+  'HKWorkoutTypeIdentifier',
+  // Heart & Cardio
+  'HKQuantityTypeIdentifierHeartRate',
   'HKQuantityTypeIdentifierRestingHeartRate',
   'HKQuantityTypeIdentifierHeartRateVariabilitySDNN',
-  'HKCategoryTypeIdentifierAppleStandHour',
-  'HKQuantityTypeIdentifierOxygenSaturation',
+  'HKQuantityTypeIdentifierVO2Max',
+  // Respiratory
   'HKQuantityTypeIdentifierRespiratoryRate',
+  'HKQuantityTypeIdentifierOxygenSaturation',
+  // Sunlight & Environment
+  'HKQuantityTypeIdentifierTimeInDaylight',
+  'HKQuantityTypeIdentifierUVExposure',
+  // Mindfulness
+  'HKCategoryTypeIdentifierMindfulSession',
+  // Temperature
+  'HKQuantityTypeIdentifierAppleSleepingWristTemperature',
+  // Body
+  'HKQuantityTypeIdentifierHeight',
+  'HKQuantityTypeIdentifierBodyMass',
 ]
+
+// Shown to users on the HealthKit permission prompt and in app/legal screens.
+export const HEALTHKIT_JUSTIFICATIONS = {
+  'HKCategoryTypeIdentifierSleepAnalysis':                  'Verifies Sleep Duration and Wake Consistency habits',
+  'HKCategoryTypeIdentifierAppleStandHour':                 'Verifies Stand Consistency habit',
+  'HKCategoryTypeIdentifierSleepingBreathingDisturbances':  'Improves sleep habit accuracy — detects disruptions that affect sleep quality score',
+  'HKQuantityTypeIdentifierStepCount':                      'Verifies Steps/Activity habit',
+  'HKQuantityTypeIdentifierDistanceWalkingRunning':         'Verifies Morning Walk and Steps habits — distance confirms outdoor activity',
+  'HKQuantityTypeIdentifierActiveEnergyBurned':             'Verifies Recovery Practice habit and overall activity level',
+  'HKQuantityTypeIdentifierBasalEnergyBurned':              'Personalises calorie and activity targets for your metabolism',
+  'HKQuantityTypeIdentifierAppleExerciseTime':              'Verifies Recovery Practice habit',
+  'HKQuantityTypeIdentifierAppleStandTime':                 'Verifies Stand Consistency habit with minute-level precision',
+  'HKWorkoutTypeIdentifier':                                'Verifies Recovery Practice (yoga, stretching) and Steps/Activity habits',
+  'HKQuantityTypeIdentifierHeartRate':                      'Powers your personal health dashboard — tracks cardiovascular trends',
+  'HKQuantityTypeIdentifierRestingHeartRate':               'Tracks cardiovascular fitness baseline over time',
+  'HKQuantityTypeIdentifierHeartRateVariabilitySDNN':       'Recovery quality metric — higher HRV correlates with better habit adherence',
+  'HKQuantityTypeIdentifierVO2Max':                         'Strongest predictor of longevity — tracked by researchers like Peter Attia',
+  'HKQuantityTypeIdentifierRespiratoryRate':                'Sleep quality and recovery indicator',
+  'HKQuantityTypeIdentifierOxygenSaturation':               'Sleep apnea risk indicator and recovery quality',
+  'HKQuantityTypeIdentifierTimeInDaylight':                 'Verifies Morning Sunlight habit — direct outdoor light measurement',
+  'HKQuantityTypeIdentifierUVExposure':                     'Secondary signal for Morning Sunlight habit verification',
+  'HKCategoryTypeIdentifierMindfulSession':                 'Verifies Meditation habit — Headspace, Calm, and Apple Mindfulness all write to this',
+  'HKQuantityTypeIdentifierAppleSleepingWristTemperature':  'Detects illness and recovery patterns during sleep',
+  'HKQuantityTypeIdentifierHeight':                         'Personalises health targets and BMI calculations',
+  'HKQuantityTypeIdentifierBodyMass':                       'Personalises step and activity targets',
+}
 
 // ─── MOBILE: MOOD CHECK-IN ───────────────────────────────────────────────────
 
