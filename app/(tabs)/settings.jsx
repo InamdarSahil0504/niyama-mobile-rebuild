@@ -300,7 +300,20 @@ export default function SettingsTab() {
     if (hkConnected || connectingHealthKit) return;
     setConnectingHealthKit(true);
     try {
-      await Core.requestAuthorization({ toRead: HEALTHKIT_READ_TYPES, toShare: [] });
+      // Filter to only types supported on this device (e.g. no Apple Watch types on iPhone-only)
+      const supportedTypes = [];
+      for (const type of HEALTHKIT_READ_TYPES) {
+        try {
+          await Core.getRequestStatusForAuthorization({ toRead: [type], toShare: [] });
+          supportedTypes.push(type);
+        } catch {
+          // Type not supported on this device — skip silently
+        }
+      }
+      // Request all supported types in one call → single permission dialog
+      if (supportedTypes.length > 0) {
+        await Core.requestAuthorization({ toRead: supportedTypes, toShare: [] });
+      }
       setHkConnected(true);
     } catch (_) {
       Alert.alert(
