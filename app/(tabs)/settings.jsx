@@ -846,7 +846,7 @@ export default function SettingsTab() {
                   <View style={[s.sectionCard, { flexDirection: 'row', paddingVertical: 0 }]}>
                     <View style={{ flex: 1, alignItems: 'center', paddingVertical: spacing.lg }}>
                       <Text style={{ fontFamily: fonts.bold, fontSize: fontSizes.xxl, color: colors.primary }}>
-                        {profile.referral_count ?? 0}
+                        {profile?.referral_count ?? 0}
                       </Text>
                       <Text style={{ fontFamily: fonts.regular, fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 2 }}>
                         Friends invited
@@ -855,7 +855,7 @@ export default function SettingsTab() {
                     <View style={{ width: 1, backgroundColor: colors.border }} />
                     <View style={{ flex: 1, alignItems: 'center', paddingVertical: spacing.lg }}>
                       <Text style={{ fontFamily: fonts.bold, fontSize: fontSizes.xxl, color: colors.primary }}>
-                        ${(profile.referral_earnings ?? 0).toFixed(2)}
+                        ${(profile?.referral_cap_bonus ?? 0).toFixed(2)}
                       </Text>
                       <Text style={{ fontFamily: fonts.regular, fontSize: fontSizes.xs, color: colors.textMuted, marginTop: 2 }}>
                         Earned
