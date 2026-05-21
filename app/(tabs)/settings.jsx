@@ -1,4 +1,6 @@
 import { useState, useCallback } from 'react';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { scheduleAllRecurring } from '../../src/notifications';
 import {
   View, Text, ScrollView, Pressable, StyleSheet, Switch,
   Modal, TextInput, Alert, ActivityIndicator, Share,
@@ -166,6 +168,16 @@ export default function SettingsTab() {
   const [hkConnected, setHkConnected] = useState(false);
   const [connectingHealthKit, setConnectingHealthKit] = useState(false);
 
+  // Wake time picker
+  const [wakePickerTime, setWakePickerTime] = useState(() => {
+    const d = new Date();
+    const mins = profile?.wake_time_minutes ?? 390; // default 6:30 AM
+    d.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
+    return d;
+  });
+  const [savingWakeTime, setSavingWakeTime] = useState(false);
+  const [wakeTimeSaved, setWakeTimeSaved] = useState(false);
+
   useFocusEffect(
     useCallback(() => {
       loadCustomHabits();
@@ -322,6 +334,30 @@ export default function SettingsTab() {
       );
     } finally {
       setConnectingHealthKit(false);
+    }
+  }
+
+  // ── Wake time ──
+
+  async function saveWakeTime() {
+    if (!session?.user?.id) return;
+    setSavingWakeTime(true);
+    try {
+      const newMinutes = wakePickerTime.getHours() * 60 + wakePickerTime.getMinutes();
+      const { error } = await supabase
+        .from('profiles')
+        .update({ wake_time_minutes: newMinutes })
+        .eq('id', session.user.id);
+      if (!error) {
+        await refreshProfile();
+        scheduleAllRecurring(newMinutes);
+        setWakeTimeSaved(true);
+        setTimeout(() => setWakeTimeSaved(false), 2500);
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Could not save wake time.');
+    } finally {
+      setSavingWakeTime(false);
     }
   }
 
@@ -557,6 +593,42 @@ export default function SettingsTab() {
           ══════════════════════════════════════════ */}
           {screen === 'my-habits' && (
             <>
+              <Text style={s.groupLabel}>Wake Time</Text>
+              <View style={s.groupCard}>
+                <View style={{ padding: spacing.lg }}>
+                  <Text style={{ fontFamily: fonts.regular, fontSize: fontSizes.base, color: colors.textSecondary, lineHeight: 22, marginBottom: spacing.sm }}>
+                    Your target wake time. Niyama verifies you woke within 30 minutes of this.
+                  </Text>
+                  <DateTimePicker
+                    value={wakePickerTime}
+                    mode="time"
+                    display="spinner"
+                    onChange={(_, date) => { if (date) setWakePickerTime(date); }}
+                    themeVariant="light"
+                    textColor={colors.textPrimary}
+                  />
+                  <Pressable
+                    style={({ pressed }) => [{
+                      backgroundColor: colors.primary,
+                      borderRadius: radius.md,
+                      paddingVertical: 14,
+                      alignItems: 'center',
+                      marginTop: spacing.sm,
+                      opacity: savingWakeTime || pressed ? 0.7 : 1,
+                    }]}
+                    onPress={saveWakeTime}
+                    disabled={savingWakeTime}
+                  >
+                    {savingWakeTime
+                      ? <ActivityIndicator color="#fff" />
+                      : <Text style={{ fontFamily: fonts.bold, fontSize: fontSizes.base, color: '#fff' }}>
+                          {wakeTimeSaved ? '✓ Saved' : 'Save Wake Time'}
+                        </Text>
+                    }
+                  </Pressable>
+                </View>
+              </View>
+
               <InfoCard tinted>
                 <Text style={s.infoCardTitle}>Phase 6 habit structure</Text>
                 {[
