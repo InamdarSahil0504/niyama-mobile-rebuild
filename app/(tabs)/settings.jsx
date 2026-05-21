@@ -776,7 +776,7 @@ export default function SettingsTab() {
                 </Pressable>
                 <Pressable
                   style={({ pressed }) => [s.linkRow, s.lastRow, pressed && { opacity: 0.65 }]}
-                  onPress={() => Linking.openURL('mailto:support@niyamalife.com?subject=Data%20Export%20Request')}
+                  onPress={() => Linking.openURL('mailto:admin@niyamalife.com?subject=Data%20Export%20Request')}
                 >
                   <Text style={s.linkRowText}>Export my data</Text>
                   <Text style={s.chevronRight}>›</Text>
@@ -791,10 +791,10 @@ export default function SettingsTab() {
           {screen === 'legal' && (
             <SectionCard>
               {[
-                { label: 'Terms of Service',   url: 'https://niyamalife.com/terms'   },
-                { label: 'Privacy Policy',      url: 'https://niyamalife.com/privacy' },
-                { label: 'Cookie Policy',       url: 'https://niyamalife.com/privacy' },
-                { label: 'Age & Minor Policy',  url: 'https://niyamalife.com/terms'   },
+                { label: 'Terms of Service',   url: 'https://www.niyamalife.com/terms'   },
+                { label: 'Privacy Policy',      url: 'https://www.niyamalife.com/privacy' },
+                { label: 'Cookie Policy',       url: 'https://www.niyamalife.com/privacy' },
+                { label: 'Age & Minor Policy',  url: 'https://www.niyamalife.com/terms'   },
               ].map(({ label, url }, i, arr) => (
                 <Pressable
                   key={label}
